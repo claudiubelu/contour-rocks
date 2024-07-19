@@ -3,7 +3,7 @@ base: bare
 build-base: ubuntu@22.04
 license: Apache-2.0
 
-version: '1.28.5'
+version: '1.28.2'
 summary: Contour is an open source Kubernetes ingress controller.
 description: |
   Contour is an open source Kubernetes ingress controller that works by deploying 
@@ -13,7 +13,7 @@ description: |
   and use of them does not imply any affiliation or endorsement.
 platforms:
   amd64:
-#  arm64:
+  arm64:
 
 
 services:
