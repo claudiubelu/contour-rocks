@@ -13,7 +13,6 @@ description: |
   and use of them does not imply any affiliation or endorsement.
 platforms:
   amd64:
-  arm64:
 
 
 services:
