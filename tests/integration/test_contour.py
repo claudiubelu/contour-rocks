@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 from k8s_test_harness import harness
-from k8s_test_harness.util import exec_util, k8s_util
+from k8s_test_harness.util import env_util, exec_util, k8s_util
 
 pytest_plugins = ["k8s_test_harness.plugin"]
 
@@ -24,12 +24,12 @@ LOG = logging.getLogger(__name__)
 
 
 def test_integration_contour(module_instance: harness.Instance):
-    image_name_env_variable = "ROCK_CONTOUR"
-
-    image_uri = os.getenv(image_name_env_variable)
-    assert image_uri is not None, f"{image_name_env_variable} is not set"
+    contour_rock = env_util.get_build_meta_info_for_rock_version(
+        "contour", "1.28.2", "amd64"
+    )
 
     # This helm chart requires the registry to be separated from the image.
+    image_uri = contour_rock.image
     registry = "docker.io"
     parts = image_uri.split("/")
     if len(parts) > 1:
