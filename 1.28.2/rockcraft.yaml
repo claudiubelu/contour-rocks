@@ -6,10 +6,10 @@ license: Apache-2.0
 version: '1.28.2'
 summary: Contour is an open source Kubernetes ingress controller.
 description: |
-  Contour is an open source Kubernetes ingress controller that works by deploying 
+  Contour is an open source Kubernetes ingress controller that works by deploying
   the Envoy proxy as a reverse proxy and load balancer.
-  Overview of Contour Trademarks: This software listing is packaged by Bitnami. 
-  The respective trademarks mentioned in the offering are owned by the respective companies, 
+  Overview of Contour Trademarks: This software listing is packaged by Bitnami.
+  The respective trademarks mentioned in the offering are owned by the respective companies,
   and use of them does not imply any affiliation or endorsement.
 platforms:
   amd64:
@@ -37,7 +37,6 @@ parts:
     build-snaps:
       - go/1.21/stable
     override-build: |
-      make build 
+      make build
       mkdir -p "${CRAFT_PART_INSTALL}/bin/"
-      cp contour ${CRAFT_PART_INSTALL}/bin/contour
-
+      cp contour ${CRAFT_PART_INSTALL}/bin/
