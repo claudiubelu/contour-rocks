@@ -38,5 +38,6 @@ parts:
       - go/1.21/stable
     override-build: |
       make build 
+      mkdir -p "${CRAFT_PART_INSTALL}/bin/"
       cp contour ${CRAFT_PART_INSTALL}/bin/contour
 
