@@ -3,7 +3,8 @@
 # See LICENSE file for licensing details
 #
 import os
-import subprocess
+
+from k8s_test_harness.util import docker_util
 
 
 def test_sanity():
@@ -12,9 +13,5 @@ def test_sanity():
     image = os.getenv(image_variable)
     assert image is not None, f"${image_variable} is not set"
 
-    docker_run = subprocess.run(
-        ["docker", "run", "--rm", "--entrypoint", entrypoint, image, "--help"],
-        capture_output=True,
-        text=True,
-    )
-    assert "Contour Kubernetes ingress controller." in docker_run.stderr
+    process = docker_util.run_in_docker(image, [entrypoint, "--help"], False)
+    assert "Contour Kubernetes ingress controller." in process.stderr

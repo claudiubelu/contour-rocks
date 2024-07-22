@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 from k8s_test_harness import harness
-from k8s_test_harness.util import exec_util
+from k8s_test_harness.util import exec_util, k8s_util
 
 pytest_plugins = ["k8s_test_harness.plugin"]
 
@@ -28,66 +28,31 @@ def test_integration_contour(module_instance: harness.Instance):
 
     image_uri = os.getenv(image_name_env_variable)
     assert image_uri is not None, f"{image_name_env_variable} is not set"
-    image_split = image_uri.split(":")
-    image = image_split[0].rsplit("/", 1)
 
-    helm_command = [
-        "k8s",
-        "helm",
-        "install",
+    # This helm chart requires the registry to be separated from the image.
+    registry = "docker.io"
+    parts = image_uri.split("/")
+    if len(parts) > 1:
+        registry = parts[0]
+        image_uri = "/".join(parts[1:])
+
+    helm_command = k8s_util.get_helm_install_command(
         "contour",
-        "--repo",
-        "https://charts.bitnami.com/bitnami",
         "contour",
-        "--namespace",
-        "contour",
-        "--create-namespace",
-        "--version",
-        "17.0.4",  # chart version with 1.28.2 app
-        "--set",
-        "installCRDs=true",
-        "--set",
-        f"contour.image.repository={image[1]}",
-        "--set",
-        f"contour.image.registry={image[0]}",
-        "--set",
-        f"contour.image.tag={image_split[1]}",
-        "--set",
-        "securityContext.runAsUser=584792",
-    ]
+        namespace="contour",
+        repository="https://charts.bitnami.com/bitnami",
+        images=[k8s_util.HelmImage(image_uri)],
+        chart_version="17.0.4",  # chart version with 1.28.2 app
+        set_configs=[f"image.registry={registry}"],
+    )
 
     module_instance.exec(helm_command)
 
     # wait for envoy
-    exec_util.stubbornly(retries=5, delay_s=5).on(module_instance).exec(
-        [
-            "k8s",
-            "kubectl",
-            "rollout",
-            "status",
-            "daemonset",
-            "contour-envoy",
-            "--namespace",
-            "contour",
-            "--timeout",
-            "180s",
-        ]
-    )
+    k8s_util.wait_for_daemonset(module_instance, "contour-envoy", "contour")
+
     # wait for contour
-    exec_util.stubbornly(retries=5, delay_s=1).on(module_instance).exec(
-        [
-            "k8s",
-            "kubectl",
-            "rollout",
-            "status",
-            "deployment",
-            "contour-contour",
-            "--namespace",
-            "contour",
-            "--timeout",
-            "180s",
-        ]
-    )
+    k8s_util.wait_for_deployment(module_instance, "contour-contour", "contour")
 
     # deploy for httpbin
     manifest = os.path.join("templates", "httpbin.yaml")
