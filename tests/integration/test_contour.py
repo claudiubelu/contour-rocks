@@ -9,6 +9,7 @@ import os
 # import uuid
 from pathlib import Path
 
+import pytest
 from k8s_test_harness import harness
 from k8s_test_harness.util import env_util, exec_util, k8s_util
 
@@ -23,9 +24,10 @@ MANIFESTS_DIR = os.path.join(Path(__file__).absolute().parent.parent, "templates
 LOG = logging.getLogger(__name__)
 
 
-def test_integration_contour(module_instance: harness.Instance):
+@pytest.mark.parametrize("image_version", ("1.28.2", "1.26.1", "1.22.3"))
+def test_integration_contour(function_instance: harness.Instance, image_version: str):
     contour_rock = env_util.get_build_meta_info_for_rock_version(
-        "contour", "1.28.2", "amd64"
+        "contour", image_version, "amd64"
     )
 
     # This helm chart requires the registry to be separated from the image.
@@ -46,24 +48,24 @@ def test_integration_contour(module_instance: harness.Instance):
         set_configs=[f"image.registry={registry}"],
     )
 
-    module_instance.exec(helm_command)
+    function_instance.exec(helm_command)
 
     # wait for envoy
-    k8s_util.wait_for_daemonset(module_instance, "contour-envoy", "contour")
+    k8s_util.wait_for_daemonset(function_instance, "contour-envoy", "contour")
 
     # wait for contour
-    k8s_util.wait_for_deployment(module_instance, "contour-contour", "contour")
+    k8s_util.wait_for_deployment(function_instance, "contour-contour", "contour")
 
     # deploy for httpbin
     manifest = os.path.join("templates", "httpbin.yaml")
-    module_instance.exec(
+    function_instance.exec(
         ["k8s", "kubectl", "apply", "-f", "-"],
         input=Path(manifest).read_bytes(),
     )
 
     result = (
         exec_util.stubbornly(retries=5, delay_s=1)
-        .on(module_instance)
+        .on(function_instance)
         .exec(
             ["k8s", "kubectl", "get", "svc", "httpbin", "-o", "json"],
             capture_output=True,
@@ -74,7 +76,7 @@ def test_integration_contour(module_instance: harness.Instance):
     awd = qwe["spec"]["clusterIP"]
     resp = (
         exec_util.stubbornly(retries=15, delay_s=5)
-        .on(module_instance)
+        .on(function_instance)
         .exec(
             [
                 "curl",
